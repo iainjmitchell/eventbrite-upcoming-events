@@ -1,37 +1,67 @@
 (function($, undefined){
+	"use strict";
 	module("display upcoming events");
 
 	test("Then upcoming events retrieved from eventbrite", function(){
 		var getUpcomingEventsCalled = false;
-		var eventbrite = {
-			getUpcomingEvents : function(options){
-				getUpcomingEventsCalled = true;
+		var fakeEventbriteFactory = {
+			create : function(){
+				return {
+					getUpcomingEvents : function(){
+						getUpcomingEventsCalled = true;
+					}
+				};
 			}
 		};
-
-		$("#eventArea").eventbriteUpcomingEvents({ eventbrite: eventbrite })
+		$("#eventArea").eventbriteUpcomingEvents({ eventbriteFactory: fakeEventbriteFactory });
 		ok(getUpcomingEventsCalled);
 	});
 
 	test("One upcoming event found, Then new event area displayed on page", function(){
 		var page = $("#eventArea");
-		var eventbrite = {
+		var fakeEventbrite = {
 			getUpcomingEvents : function(){
 				var events = [{}];
-				$(eventbrite).trigger("event", events);
+				$(fakeEventbrite).trigger("event", events);
 			}
-		}
-		page.eventbriteUpcomingEvents({ eventbrite: eventbrite });
+		};
+		var fakeEventbriteFactory = {
+			create : function(){
+				return fakeEventbrite;
+			}
+		};
+		page.eventbriteUpcomingEvents({ eventbriteFactory: fakeEventbriteFactory });
 		equal(page.find(".event").length, 1);
+	});
+
+	test("No upcoming events found, Then no event area displayed on page", function(){
+		var page = $("#eventArea");
+		var fakeEventbriteFactory = {
+			create : function(){
+				return {
+					getUpcomingEvents : function(){
+					}
+				};
+			}
+		};
+		page.eventbriteUpcomingEvents({ eventbriteFactory: fakeEventbriteFactory });
+		equal(page.find(".event").length, 0);
 	});
 })(jQuery);
 
-$.widget("ijm.eventbriteUpcomingEvents", {
+(function($, undefined){
+	"use strict";
+	$.widget("ijm.eventbriteUpcomingEvents", {
 		options: {
 		},
 		_create: function(){
-			this.options.eventbrite.getUpcomingEvents();
+			var eventbrite = this.options.eventbriteFactory.create();
+			$(eventbrite).bind("event", $.proxy(this._displayEvents, this));
+			eventbrite.getUpcomingEvents();
+		},
+		_displayEvents: function(){
 			var eventDetails = $("<div>").addClass("event");
 			eventDetails.appendTo(this.element);
 		}
 	});
+})(jQuery);
