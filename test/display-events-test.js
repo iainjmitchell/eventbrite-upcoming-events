@@ -36,12 +36,7 @@
 				$(fakeEventbrite).trigger("eventFound", eventDetails);
 			}
 		};
-		var fakeEventbriteFactory = {
-			create : function(){
-				return fakeEventbrite;
-			}
-		};
-		page.eventbriteUpcomingEvents({ eventbriteFactory: fakeEventbriteFactory });
+		page.eventbriteUpcomingEvents({ eventbriteFactory: createFakeEventbriteFactory(fakeEventbrite) });
 		equal(page.find(".event").length, 1);
 	});
 
@@ -69,12 +64,7 @@
 					.trigger("eventFound", {});
 			}
 		};
-		var fakeEventbriteFactory = {
-			create : function(){
-				return fakeEventbrite;
-			}
-		};
-		page.eventbriteUpcomingEvents({ eventbriteFactory: fakeEventbriteFactory });
+		page.eventbriteUpcomingEvents({ eventbriteFactory: createFakeEventbriteFactory(fakeEventbrite) });
 		equal(page.find(".event").length, 3);
 	});
 
@@ -87,36 +77,70 @@
 				$(fakeEventbrite).trigger("eventFound", eventDetails);
 			}
 		};
-		var fakeEventbriteFactory = {
-			create : function(){
-				return fakeEventbrite;
-			}
-		};
-		page.eventbriteUpcomingEvents({ eventbriteFactory: fakeEventbriteFactory });
+		page.eventbriteUpcomingEvents({ eventbriteFactory: createFakeEventbriteFactory(fakeEventbrite) });
 		equal(page.find(".event:first").find("span.title").text(), eventTitle);
 	});
+
+	test("One upcoming event found, Then event dateTime is displayed on page", function(){
+		var page = $("#eventArea"),
+			eventDateTime = "2012-11-27 18:30:00";
+		var fakeEventbrite = {
+			getUpcomingEvents : function(){
+				var eventDetails = { start_date : eventDateTime};
+				$(fakeEventbrite).trigger("eventFound", eventDetails);
+			}
+		};
+		page.eventbriteUpcomingEvents({ eventbriteFactory: createFakeEventbriteFactory(fakeEventbrite) });
+		equal(page.find(".event:first").find("span.dateTime").text(), "Tuesday, 27 November 2012 from 18:30");
+	});
+
+	function createFakeEventbriteFactory(eventbriteToReturn){
+		return {
+			create : function(){
+				return eventbriteToReturn;
+			}
+		};
+	}
 })(jQuery);
 
 (function($, undefined){
 	"use strict";
-	var EventDisplay = function(context){
-		function showEvent(e, eventDetails){
-			var title = $("<span>").addClass("title").text(eventDetails.title);
+	var EventDisplay = function(context, eventDateTimeFormat){
+		function showEvent(e, eventDetails){			
 			$("<div>").addClass("event")
-				.append(title)
+				.append(buildEventSummary(eventDetails))	
 				.appendTo(context);
 		}
 
+		function buildEventSummary(eventDetails){
+			var title = $("<span>").addClass("title").text(eventDetails.title);
+			if(eventDetails.start_date){
+				var date = $("<span>").addClass("dateTime").text(eventDateTimeFormat.convert(eventDetails.start_date));
+			}
+			return title.after(date);
+			
+		}
 		return {
 			showEvent : showEvent
 		};
 	};
 
+	var EventDateTimeFormat = function(){
+		function convert(dateTime){
+			var startDate = Date.parse(dateTime);
+			return startDate.toString("dddd, d MMMM yyyy") + " from " + startDate.toString("HH:mm");
+		}
+		return {
+			convert : convert
+		}
+	}
+
 	$.widget("ijm.eventbriteUpcomingEvents", {
 		options: {
 		},
 		_create: function(){
-			var eventDisplay = new EventDisplay(this.element),
+			var eventDateTimeFormat = new EventDateTimeFormat(),
+				eventDisplay = new EventDisplay(this.element, eventDateTimeFormat),
 				eventbrite = this.options.eventbriteFactory.create({ 
 					user : this.options.user,
 					apiKey : this.options.apiKey
@@ -125,6 +149,4 @@
 			eventbrite.getUpcomingEvents();
 		}
 	});
-
-
 })(jQuery);
