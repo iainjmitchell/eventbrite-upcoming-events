@@ -77,24 +77,54 @@
 		page.eventbriteUpcomingEvents({ eventbriteFactory: fakeEventbriteFactory });
 		equal(page.find(".event").length, 3);
 	});
+
+	test("One upcoming event found, Then event title is displayed on page", function(){
+		var page = $("#eventArea"),
+			eventTitle = "an event";
+		var fakeEventbrite = {
+			getUpcomingEvents : function(){
+				var eventDetails = { title : eventTitle};
+				$(fakeEventbrite).trigger("eventFound", eventDetails);
+			}
+		};
+		var fakeEventbriteFactory = {
+			create : function(){
+				return fakeEventbrite;
+			}
+		};
+		page.eventbriteUpcomingEvents({ eventbriteFactory: fakeEventbriteFactory });
+		equal(page.find(".event:first").find("span.title").text(), eventTitle);
+	});
 })(jQuery);
 
 (function($, undefined){
 	"use strict";
+	var EventDisplay = function(context){
+		function showEvent(e, eventDetails){
+			var title = $("<span>").addClass("title").text(eventDetails.title);
+			$("<div>").addClass("event")
+				.append(title)
+				.appendTo(context);
+		}
+
+		return {
+			showEvent : showEvent
+		};
+	};
+
 	$.widget("ijm.eventbriteUpcomingEvents", {
 		options: {
 		},
 		_create: function(){
-			var eventbrite = this.options.eventbriteFactory.create({ 
-				user : this.options.user,
-				apiKey : this.options.apiKey
-			});
-			$(eventbrite).bind("eventFound", $.proxy(this._displayEvents, this));
+			var eventDisplay = new EventDisplay(this.element),
+				eventbrite = this.options.eventbriteFactory.create({ 
+					user : this.options.user,
+					apiKey : this.options.apiKey
+				});
+			$(eventbrite).bind("eventFound", eventDisplay.showEvent);
 			eventbrite.getUpcomingEvents();
-		},
-		_displayEvents: function(e, result){
-			var eventDetails = $("<div>").addClass("event");
-			eventDetails.appendTo(this.element);
 		}
 	});
+
+
 })(jQuery);
