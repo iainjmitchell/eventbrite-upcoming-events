@@ -1,6 +1,6 @@
 (function($, undefined){
 	"use strict";
-	module("display upcoming events");
+	module("eventbrite initialisation");
 
 	test("Then eventbrite created for user", function(){
 		var user = "aUser@aDomain.com",
@@ -28,6 +28,7 @@
 		equal(eventbriteApiKey, apiKey);
 	});
 
+	module("Events being displayed")
 	test("One upcoming event found, Then new event area displayed on page", function(){
 		var page = $("#eventArea");
 		var fakeEventbrite = {
@@ -68,6 +69,7 @@
 		equal(page.find(".event").length, 3);
 	});
 
+	module("Event details displayed")
 	test("One upcoming event found, Then event title is displayed on page", function(){
 		var page = $("#eventArea"),
 			eventTitle = "an event";
@@ -78,7 +80,7 @@
 			}
 		};
 		page.eventbriteUpcomingEvents({ eventbriteFactory: createFakeEventbriteFactory(fakeEventbrite) });
-		equal(page.find(".event:first").find("span.title").text(), eventTitle);
+		equal(page.find(".event:first").find(".eventSummary span.title").text(), eventTitle);
 	});
 
 	test("One upcoming event found, Then event dateTime is displayed on page", function(){
@@ -91,7 +93,7 @@
 			}
 		};
 		page.eventbriteUpcomingEvents({ eventbriteFactory: createFakeEventbriteFactory(fakeEventbrite) });
-		equal(page.find(".event:first").find("span.dateTime").text(), "Tuesday, 27 November 2012 from 18:30");
+		equal(page.find(".event:first").find(".eventSummary span.dateTime").text(), "Tuesday, 27 November 2012 from 18:30");
 	});
 
 	function createFakeEventbriteFactory(eventbriteToReturn){
@@ -113,12 +115,21 @@
 		}
 
 		function buildEventSummary(eventDetails){
-			var title = $("<span>").addClass("title").text(eventDetails.title);
+			var eventSummary = $("<div>").addClass("eventSummary");
+			$("<span>")
+				.addClass("title")
+				.text(eventDetails.title)
+				.append("<br>")
+				.appendTo(eventSummary);
+
 			if(eventDetails.start_date){
-				var date = $("<span>").addClass("dateTime").text(eventDateTimeFormat.convert(eventDetails.start_date));
+				$("<span>")
+					.addClass("dateTime")
+					.text(eventDateTimeFormat.convert(eventDetails.start_date))
+					.append("<br>")
+					.appendTo(eventSummary);
 			}
-			return title.after(date);
-			
+			return eventSummary;
 		}
 		return {
 			showEvent : showEvent
