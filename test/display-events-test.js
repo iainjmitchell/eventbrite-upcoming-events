@@ -17,6 +17,19 @@
 		ok(getUpcomingEventsCalled);
 	});
 
+	test("Then eventbrite created for user", function(){
+		var user = "aUser@aDomain.com",
+			eventbriteUser = undefined;
+		var eventbriteFactorySpy = {
+			create : function(options){
+				eventbriteUser = options.user;
+				return {getUpcomingEvents: function(){}};
+			}
+		};
+		$("#eventArea").eventbriteUpcomingEvents({ user: user, eventbriteFactory: eventbriteFactorySpy });
+		equal(eventbriteUser, user);
+	});
+
 	test("One upcoming event found, Then new event area displayed on page", function(){
 		var page = $("#eventArea");
 		var fakeEventbrite = {
@@ -55,7 +68,7 @@
 		options: {
 		},
 		_create: function(){
-			var eventbrite = this.options.eventbriteFactory.create();
+			var eventbrite = this.options.eventbriteFactory.create({ user : this.options.user });
 			$(eventbrite).bind("event", $.proxy(this._displayEvents, this));
 			eventbrite.getUpcomingEvents();
 		},
