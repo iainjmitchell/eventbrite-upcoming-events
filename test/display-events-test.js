@@ -109,6 +109,53 @@
 		equal(page.find(".event:first").find("div.description").html(), eventDescription);
 	});
 
+	test("One upcoming event found, Then event venue name/city is displayed on page", function(){
+		var page = $("#eventArea"),
+			eventVenueName= "a Place",
+			eventCity="a city";
+		var fakeEventbrite = {
+			getUpcomingEvents : function(){
+				var eventDetails = { venue : {
+					city : eventCity,
+					name : eventVenueName
+				}};
+				$(fakeEventbrite).trigger("eventFound", eventDetails);
+			}
+		};
+		page.eventbriteUpcomingEvents({ eventbriteFactory: createFakeEventbriteFactory(fakeEventbrite) });
+		equal(page.find(".event:first").find("div.venueDetails span.venueName").html(), eventVenueName + ", " + eventCity);
+	});
+
+	test("One upcoming event found, Then event venue address is displayed on page", function(){
+		var page = $("#eventArea"),
+			eventAddress= "an address";
+		var fakeEventbrite = {
+			getUpcomingEvents : function(){
+				var eventDetails = { venue : {
+					address : eventAddress
+				}};
+				$(fakeEventbrite).trigger("eventFound", eventDetails);
+			}
+		};
+		page.eventbriteUpcomingEvents({ eventbriteFactory: createFakeEventbriteFactory(fakeEventbrite) });
+		equal(page.find(".event:first").find("div.venueDetails span.address").text(), eventAddress);
+	});
+
+	test("One upcoming event found, Then event venue postcode is displayed on page", function(){
+		var page = $("#eventArea"),
+			eventPostcode= "ABC D01";
+		var fakeEventbrite = {
+			getUpcomingEvents : function(){
+				var eventDetails = { venue : {
+					post_code : eventPostcode
+				}};
+				$(fakeEventbrite).trigger("eventFound", eventDetails);
+			}
+		};
+		page.eventbriteUpcomingEvents({ eventbriteFactory: createFakeEventbriteFactory(fakeEventbrite) });
+		equal(page.find(".event:first").find("div.venueDetails span.postcode").text(), eventPostcode);
+	});
+
 	function createFakeEventbriteFactory(eventbriteToReturn){
 		return {
 			create : function(){
@@ -121,14 +168,56 @@
 (function($, undefined){
 	"use strict";
 	var EventDisplay = function(context, eventDateTimeFormat){
+		var eventSummaryElementBuilder = new EventSummaryElementBuilder(eventDateTimeFormat),
+			descriptionElementBuilder = new DescriptionElementBuilder(),
+			venueDetailsBuilder = new VenueDetailsBuilder();
+
 		function showEvent(e, eventDetails){			
-			$("<div>").addClass("event")
-				.append(buildEventSummaryElement(eventDetails))	
-				.append(buildDescriptionElement(eventDetails.description))				
+			$("<div>")
+				.addClass("event")
+				.append(eventSummaryElementBuilder.build(eventDetails))	
+				.append(descriptionElementBuilder.build(eventDetails.description))	
+				.append(venueDetailsBuilder.build(eventDetails.venue))	
 				.appendTo(context);
 		}
 
-		function buildEventSummaryElement(eventDetails){
+		return {
+			showEvent : showEvent
+		};
+	};
+
+	var VenueDetailsBuilder = function(){
+		function build(venue){
+			if (!!venue){
+				var venueName = $("<span>").addClass("venueName").text(venue.name + ", " + venue.city),
+					address = $("<span>").addClass("address").text(venue.address),
+					postcode = $("<span>").addClass("postcode").text(venue.post_code);
+				return $("<div>")
+					.addClass("venueDetails")
+					.append(venueName)
+					.append(address)
+					.append(postcode);
+			}
+		}
+
+		return {
+			build : build
+		};
+	};
+
+	var DescriptionElementBuilder = function(){
+		function build(descriptionHtml){
+			return $("<div>")
+				.addClass("description")
+				.html(descriptionHtml);
+		}
+		return {
+			build : build
+		};
+	};
+
+	var EventSummaryElementBuilder = function(eventDateTimeFormat){
+		function build(eventDetails){
 			var eventSummary = $("<div>").addClass("eventSummary");
 			$("<span>")
 				.addClass("title")
@@ -145,14 +234,8 @@
 			}
 			return eventSummary;
 		}
-
-		function buildDescriptionElement(descriptionHtml){
-			return $("<div>")
-				.addClass("description")
-				.html(descriptionHtml);
-		}
 		return {
-			showEvent : showEvent
+			build : build
 		};
 	};
 
@@ -163,8 +246,8 @@
 		}
 		return {
 			convert : convert
-		}
-	}
+		};
+	};
 
 	$.widget("ijm.eventbriteUpcomingEvents", {
 		options: {
