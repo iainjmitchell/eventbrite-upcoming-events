@@ -96,6 +96,19 @@
 		equal(page.find(".event:first").find(".eventSummary span.dateTime").text(), "Tuesday, 27 November 2012 from 18:30");
 	});
 
+	test("One upcoming event found, Then event description is displayed on page", function(){
+		var page = $("#eventArea"),
+			eventDescription = "a description";
+		var fakeEventbrite = {
+			getUpcomingEvents : function(){
+				var eventDetails = { description : eventDescription};
+				$(fakeEventbrite).trigger("eventFound", eventDetails);
+			}
+		};
+		page.eventbriteUpcomingEvents({ eventbriteFactory: createFakeEventbriteFactory(fakeEventbrite) });
+		equal(page.find(".event:first").find("div.description").html(), eventDescription);
+	});
+
 	function createFakeEventbriteFactory(eventbriteToReturn){
 		return {
 			create : function(){
@@ -110,11 +123,12 @@
 	var EventDisplay = function(context, eventDateTimeFormat){
 		function showEvent(e, eventDetails){			
 			$("<div>").addClass("event")
-				.append(buildEventSummary(eventDetails))	
+				.append(buildEventSummaryElement(eventDetails))	
+				.append(buildDescriptionElement(eventDetails.description))				
 				.appendTo(context);
 		}
 
-		function buildEventSummary(eventDetails){
+		function buildEventSummaryElement(eventDetails){
 			var eventSummary = $("<div>").addClass("eventSummary");
 			$("<span>")
 				.addClass("title")
@@ -130,6 +144,12 @@
 					.appendTo(eventSummary);
 			}
 			return eventSummary;
+		}
+
+		function buildDescriptionElement(descriptionHtml){
+			return $("<div>")
+				.addClass("description")
+				.html(descriptionHtml);
 		}
 		return {
 			showEvent : showEvent
